@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OneDrive Picker Test</title>
+  <script src="https://js.live.net/v7.2/OneDrive.js"></script>
+</head>
+<body>
+
+  <h1>Test OneDrive Picker</h1>
+
+  <button onclick="openPicker()">Otevřít OneDrive Picker</button>
+
+  <script>
+function openPicker() {
+  var odOptions = {
+    clientId: "7a4d1385-9b7c-47d3-8669-1abf187d7483",
+    action: "query",
+    multiSelect: false,
+    advanced: {
+      // Automaticky vezme aktuální adresu stránky
+      redirectUri: window.location.origin + window.location.pathname, 
+
+      // ČISTÁ URL bez HTML značek
+      endpointHint: "https://akcenta.sharepoint.com", 
+
+      queryParameters: "select=id,name,size,webUrl",
+      isPopup: true
+    },
+    success: function(files) {
+      console.log(files);
+      alert("Vybral jsi: " + files.value[0].name);
+    },
+    cancel: function() {
+      console.log("Picker zavřen");
+    },
+    error: function(e) {
+      console.error("Detailní chyba:", e);
+      alert("Chyba: " + (e.errorCode || "neznámá"));
+    }
+  };
+
+  OneDrive.open(odOptions);
+}
+  </script>
+
+</body>
+</html>
+
+
+
