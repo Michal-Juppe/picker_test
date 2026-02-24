@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OneDrive Picker Test</title>
+  <script src="https://js.live.net/v7.2/OneDrive.js"></script>
+</head>
+<body>
+
+  <h1>Test OneDrive Picker</h1>
+
+  <button onclick="openPicker()">Otevřít OneDrive Picker</button>
+
+  <script>
+    function openPicker() {
+      OneDrive.open({
+        clientId: "a7108c09-cf94-46cc-8ccd-7c6f9686c612",
+        action: "query",
+        multiSelect: false,
+        success: function(files) {
+          console.log(files);
+          alert("Vybral jsi: " + files.value[0].name);
+        },
+        cancel: function() {
+          console.log("Picker zavřen");
+        },
+        error: function(e) {
+          console.error(e);
+          alert("Chyba: " + JSON.stringify(e));
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
