@@ -1,3 +1,10 @@
+function combine(...paths) {
+    return paths
+        .map(path => path.replace(/^[\\|/]/, "").replace(/[\\|/]$/, ""))
+        .join("/")
+        .replace(/\\/g, "/");
+}
+
 const msalParams = {
     auth: {
         authority: "https://login.microsoftonline.com/8820241f-63cd-4a58-8dd7-b2a9829ae87b",
