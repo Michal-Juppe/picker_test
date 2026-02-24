@@ -1,6 +1,6 @@
 const msalParams = {
     auth: {
-        authority: "https://login.microsoftonline.com/common",
+        authority: "https://login.microsoftonline.com/8820241f-63cd-4a58-8dd7-b2a9829ae87b",
         clientId: "7a4d1385-9b7c-47d3-8669-1abf187d7483",
         redirectUri: "https://michal-juppe.github.io/picker_test/"
     },
