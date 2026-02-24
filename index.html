@@ -1,0 +1,184 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="https://alcdn.msauth.net/browser/2.19.0/js/msal-browser.min.js"></script>
+    <script type="text/javascript" src="scripts/auth.js"></script>
+
+    <script>
+        // --- KONFIGURACE ---
+        const baseUrl = "https://akcenta-my.sharepoint.com"; 
+        // -------------------
+
+        function combine(...paths) {
+            return paths
+                .map(path => path.replace(/^[\\|/]/, "").replace(/[\\|/]$/, ""))
+                .join("/")
+                .replace(/\\/g, "/");
+        }
+
+        const params = {
+            sdk: "8.0",
+            entry: {
+                oneDrive: {
+                    files: {}, 
+                }
+            },
+            authentication: {},
+            messaging: {
+                origin: window.location.origin, // Automaticky vezme vaši adresu
+                channelId: "27"
+            },
+            typesAndSources: {
+                mode: "files",
+                pivots: {
+                    oneDrive: true,
+                    recent: true,
+                },
+            },
+        };
+
+        let win = null;
+        let port = null;
+
+        async function launchPicker(e) {
+            e.preventDefault();
+
+            // Otevření prázdného okna (předchází blokování pop-upů)
+            win = window.open("", "Picker", "width=800,height=600");
+
+            try {
+                // Získání tokenu z auth.js
+                const authToken = await getToken({
+                    resource: baseUrl,
+                    command: "authenticate",
+                    type: "SharePoint",
+                });
+
+                const queryString = new URLSearchParams({
+                    filePicker: JSON.stringify(params),
+                });
+
+                const url = combine(baseUrl, `_layouts/15/FilePicker.aspx?${queryString}`);
+
+                // Příprava formuláře pro POST odeslání tokenu do okna
+                const form = win.document.createElement("form");
+                form.setAttribute("action", url);
+                form.setAttribute("method", "POST");
+                win.document.body.append(form);
+
+                const input = win.document.createElement("input");
+                input.setAttribute("type", "hidden");
+                input.setAttribute("name", "access_token");
+                input.setAttribute("value", authToken);
+                form.appendChild(input);
+
+                form.submit();
+
+                // Naslouchání na zprávu o inicializaci kanálu
+                window.addEventListener("message", (event) => {
+                    if (event.source && event.source === win) {
+                        const message = event.data;
+
+                        if (message.type === "initialize" && message.channelId === params.messaging.channelId) {
+                            port = event.ports[0];
+                            port.addEventListener("message", messageListener);
+                            port.start();
+                            port.postMessage({ type: "activate" });
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Chyba při spouštění pickeru:", error);
+                win.close();
+                alert("Nepodařilo se získat přístupový token.");
+            }
+        }
+
+        async function messageListener(message) {
+            switch (message.data.type) {
+                case "notification":
+                    console.log("Notification:", message.data);
+                    break;
+
+                case "command":
+                    port.postMessage({
+                        type: "acknowledge",
+                        id: message.data.id,
+                    });
+
+                    const command = message.data.data;
+
+                    switch (command.command) {
+                        case "authenticate":
+                            const token = await getToken(command);
+                            if (token) {
+                                port.postMessage({
+                                    type: "result",
+                                    id: message.data.id,
+                                    data: { result: "token", token }
+                                });
+                            }
+                            break;
+
+                        case "close":
+                            win.close();
+                            break;
+
+                        case "pick":
+                            // TADY SE DĚJE TO "NAHRÁNÍ"
+                            console.log("Vybraná data:", command);
+                            const item = command.items[0];
+                            const downloadUrl = item.driveItem["@microsoft.graph.downloadUrl"];
+                            const fileName = item.driveItem.name;
+
+                            // Informace pro uživatele
+                            document.getElementById("pickedFiles").innerHTML = `Stahuji soubor: <b>${fileName}</b>...`;
+
+                            // Fyzické stažení souboru na stránku (Blob)
+                            fetch(downloadUrl)
+                                .then(res => res.blob())
+                                .then(blob => {
+                                    console.log("Soubor stažen jako Blob:", blob);
+                                    document.getElementById("pickedFiles").innerHTML = `
+                                        <p style="color: green;">✔ Soubor <b>${fileName}</b> byl nahrán na stránku.</p>
+                                        <p>Velikost: ${Math.round(blob.size / 1024)} KB</p>
+                                    `;
+                                    // Zde můžete blob poslat na svůj server nebo ho zobrazit
+                                })
+                                .catch(err => {
+                                    console.error("Chyba stahování:", err);
+                                    alert("Chyba při nahrávání souboru na stránku.");
+                                });
+
+                            port.postMessage({
+                                type: "result",
+                                id: message.data.id,
+                                data: { result: "success" },
+                            });
+                            win.close();
+                            break;
+
+                        default:
+                            console.warn("Nepodporovaný příkaz:", command.command);
+                            break;
+                    }
+                    break;
+            }
+        }
+    </script>
+</head>
+<body>
+    <h2>OneDrive Picker pro Akcenta CZ</h2>
+    <button id="launchPicker" style="padding: 10px 20px; cursor: pointer;">Vybrat soubor z OneDrive</button>
+    
+
+
+    <div id="pickedFiles" style="border: 1px dashed #ccc; padding: 20px; min-height: 50px;">
+        Zde se zobrazí informace o nahrávaném souboru...
+    </div>
+
+    <script type="text/javascript">
+        document.getElementById("launchPicker").onclick = launchPicker;
+    </script>
+</body>
+</html>
