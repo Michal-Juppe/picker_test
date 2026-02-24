@@ -2,8 +2,8 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>File Picker Test</title>
-  <script src="https://7.2/OneDrive.js</script>
+  <title>OneDrive Picker Test</title>
+  <script src="https://js.live.net/v7.2/OneDrive.js"></script>
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <script>
     function openPicker() {
       OneDrive.open({
-        clientId: "a7108c09-cf94-46cc-8ccd-7c6f9686c612",   // Microsoft DEMO Client ID
+        clientId: "a7108c09-cf94-46cc-8ccd-7c6f9686c612",
         action: "query",
         multiSelect: false,
         success: function(files) {
@@ -22,7 +22,7 @@
           alert("Vybral jsi: " + files.value[0].name);
         },
         cancel: function() {
-          console.log("Uživatel picker zavřel");
+          console.log("Picker zavřen");
         },
         error: function(e) {
           console.error(e);
@@ -34,3 +34,4 @@
 
 </body>
 </html>
+
